@@ -34,7 +34,7 @@ echo "[1/5] Kaynaklar derleniyor ve bağlanıyor"
     --manifest "$HERE/app/src/main/AndroidManifest.xml" \
     --java "$OUT/gen" \
     --min-sdk-version 26 --target-sdk-version 34 \
-    --version-code 1 --version-name 0.1.0 \
+    --version-code 2 --version-name 0.2.0 \
     -o "$OUT/base.apk" "$OUT/res.zip"
 
 echo "[2/5] Java derleniyor (core + app + R)"

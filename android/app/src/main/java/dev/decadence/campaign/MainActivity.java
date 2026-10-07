@@ -19,6 +19,7 @@ import android.widget.Toast;
 
 import java.security.SecureRandom;
 
+import decadence.core.Army;
 import decadence.core.Campaign;
 import decadence.core.World;
 
@@ -45,6 +46,7 @@ public class MainActivity extends Activity {
     private boolean dirty = true;
 
     private TextView status;
+    private TextView events;
     private MapView map;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -94,6 +96,13 @@ public class MainActivity extends Activity {
         status.setTextSize(14);
         status.setPadding(dp(16), dp(12), dp(16), dp(12));
         root.addView(status, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        events = new TextView(this);
+        events.setTextColor(0xFFB8A98A);
+        events.setTextSize(12);
+        events.setPadding(dp(16), 0, dp(16), dp(8));
+        root.addView(events, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         map = new MapView(this);
@@ -154,6 +163,7 @@ public class MainActivity extends Activity {
             world = null;
             status.setText("Oda yok. \"Yeni oda\" ile kur ya da \"Kodu gir\" ile katıl.");
             map.update(null, player, 0);
+            events.setText("");
         } else {
             long day = campaign.dayAt(now);
             if (dirty || day != worldDay) {
@@ -161,10 +171,26 @@ public class MainActivity extends Activity {
                 worldDay = day;
                 dirty = false;
             }
-            status.setText("Gün " + day + " · Oyuncu " + player + " · Dokun: ordunu düğüme yolla");
+            Army mine = world.army(World.PLAYER_ARMY_1 + (player - 1));
+            String army = mine.alive()
+                    ? "Ordun: " + mine.men() + " asker, " + mine.food() + " iaşe"
+                    : "Ordun yok oldu";
+            status.setText("Gün " + day + " · Oyuncu " + player + " · " + army);
+            events.setText(recentEvents());
             map.update(world, player, campaign.dayFraction(now));
         }
         map.invalidate();
+    }
+
+    /** Son üç olay; en yeni en altta. */
+    private String recentEvents() {
+        java.util.List<String> all = world.events();
+        StringBuilder sb = new StringBuilder();
+        for (int i = Math.max(0, all.size() - 3); i < all.size(); i++) {
+            if (sb.length() > 0) sb.append('\n');
+            sb.append(all.get(i));
+        }
+        return sb.toString();
     }
 
     private void onNodeTapped(int node) {

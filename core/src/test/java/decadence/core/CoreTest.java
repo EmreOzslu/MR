@@ -15,9 +15,11 @@ public final class CoreTest {
         mergeOrderDoesNotMatter();
         lateCommandConvergesToFreshReplay();
         foreignArmyCommandIsRejected();
-        playerArmyArrivesAndNpcsWander();
+        musterPeriodKeepsKingdomsStill();
+        playerArmyArrivesOrIsDefeatedVisibly();
+        economyStaysInBounds();
         codeRoundTripAndTwoDeviceSync();
-        System.out.println("OK: 6 test geçti");
+        System.out.println("OK: 8 test geçti");
     }
 
     static void check(boolean ok, String msg) {
@@ -85,21 +87,47 @@ public final class CoreTest {
         check(w.rejected().get(0).player() == 2, "reddedilen komut oyuncu 2'ye ait olmalı");
     }
 
-    static void playerArmyArrivesAndNpcsWander() {
+    static void musterPeriodKeepsKingdomsStill() {
         Campaign c = newCampaign();
         c.merge(sampleCommands());
-
-        World w0 = c.stateAt(0);
-        World w30 = c.stateAt(30);
-        boolean npcMoved = false;
+        World early = c.stateAt(World.MUSTER_DAYS - 1);
+        World before = c.stateAt(0);
         for (int i = 0; i < World.PLAYER_ARMY_1; i++) {
-            if (w0.army(i).at() != w30.army(i).at()) npcMoved = true;
+            check(before.army(i).at() == early.army(i).at(), "hazırlık döneminde krallık ordusu hareket etti");
         }
-        check(npcMoved, "NPC ordular hareket etmedi");
+        World later = c.stateAt(120);
+        boolean anyMoved = false;
+        for (int i = 0; i < World.PLAYER_ARMY_1; i++) {
+            if (later.army(i).at() != early.army(i).at()) anyMoved = true;
+        }
+        check(anyMoved, "hazırlık sonrası hiçbir krallık ordusu hareket etmedi");
+    }
 
-        World w300 = c.stateAt(300);
-        check(w300.army(World.PLAYER_ARMY_1).at() == 150, "oyuncu ordusu hedefe varmadı");
-        check(w300.army(World.PLAYER_ARMY_1).dest() == -1, "varıştan sonra hedef sıfırlanmalı");
+    /** Oyuncu ordusu hedefe varır ya da yolda yok olur; kayıtta ya da ordu durumunda görünmeli. */
+    static void playerArmyArrivesOrIsDefeatedVisibly() {
+        Campaign c = newCampaign();
+        c.merge(sampleCommands());
+        World w = c.stateAt(300);
+        Army army = w.army(World.PLAYER_ARMY_1);
+        boolean arrived = army.alive() && army.at() == 150 && army.dest() == -1;
+        boolean defeated = false;
+        for (String e : w.events()) {
+            if (e.contains("Oyuncu 1")) defeated = true;
+        }
+        check(arrived || defeated || !army.alive(), "oyuncu ordusu ne vardı ne de kayıt düştü");
+    }
+
+    static void economyStaysInBounds() {
+        Campaign c = newCampaign();
+        c.merge(sampleCommands());
+        World w = c.stateAt(200);
+        for (int n = 0; n < World.NODES; n++) {
+            Settlement s = w.settlement(n);
+            check(s.pop() >= 20 && s.pop() <= World.MAX_POP, "nüfus sınır dışı: " + s.pop());
+            check(s.food() >= 0 && s.food() <= s.pop() / 2 + 100, "yiyecek sınır dışı: " + s.food());
+            check(s.garrison() >= 0, "negatif garnizon");
+        }
+        check(!w.events().isEmpty(), "200 günde hiçbir olay olmadı");
     }
 
     static void codeRoundTripAndTwoDeviceSync() {

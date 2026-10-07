@@ -9,6 +9,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import decadence.core.Army;
+import decadence.core.Settlement;
 import decadence.core.World;
 
 /**
@@ -22,11 +23,14 @@ public class MapView extends View {
     }
 
     private static final int COLOR_EDGE = 0x662A4A63;
-    private static final int COLOR_NODE = 0xFF9FB8C8;
-    private static final int COLOR_NPC = 0xFFB0B7BF;
-    private static final int COLOR_P1 = 0xFF3EE6D2;  // fosforlu turkuaz
-    private static final int COLOR_P2 = 0xFFFFC857;  // sıcak sarı
     private static final int COLOR_ROUTE = 0x993EE6D2;
+    private static final int COLOR_P1 = 0xFF3EE6D2;      // fosforlu turkuaz
+    private static final int COLOR_P2 = 0xFFFFC857;      // sıcak sarı
+    private static final int COLOR_KUZEY = 0xFFB5523B;   // paslı kiremit
+    private static final int COLOR_DOGU = 0xFF6C8EBF;    // soğuk çelik
+    private static final int COLOR_BATI = 0xFF9B7FB8;    // solgun mor
+    private static final int COLOR_GUNEY = 0xFF8DB36B;   // yosun yeşili
+    private static final int COLOR_NEUTRAL = 0xFF9FB8C8;
 
     private final float density;
     private final Paint edgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -51,7 +55,7 @@ public class MapView extends View {
         edgePaint.setStyle(Paint.Style.STROKE);
         edgePaint.setStrokeWidth(1.5f * density);
 
-        nodePaint.setColor(COLOR_NODE);
+        nodePaint.setColor(COLOR_NEUTRAL);
         nodePaint.setStyle(Paint.Style.FILL);
 
         armyPaint.setStyle(Paint.Style.FILL);
@@ -85,7 +89,10 @@ public class MapView extends View {
             }
         }
         for (int i = 0; i < World.NODES; i++) {
-            canvas.drawCircle(px(i), py(i), 3 * density, nodePaint);
+            Settlement s = world.settlement(i);
+            nodePaint.setColor(colorFor(s.owner()));
+            float radius = (2.5f + s.pop() / 250f) * density;
+            canvas.drawCircle(px(i), py(i), radius, nodePaint);
         }
 
         int mine = World.PLAYER_ARMY_1 + (player - 1);
@@ -94,10 +101,12 @@ public class MapView extends View {
 
         for (int a = 0; a < world.armyCount(); a++) {
             Army army = world.army(a);
+            if (!army.alive()) continue;
             float[] p = armyPosition(army);
             armyPaint.setColor(colorFor(army.owner()));
-            canvas.drawCircle(p[0], p[1], (a == mine ? 7 : 5) * density, armyPaint);
-            if (a == mine) canvas.drawCircle(p[0], p[1], 13 * density, routePaint);
+            float radius = (3f + army.men() / 60f) * density;
+            canvas.drawCircle(p[0], p[1], radius, armyPaint);
+            if (a == mine) canvas.drawCircle(p[0], p[1], radius + 5 * density, routePaint);
         }
     }
 
@@ -168,8 +177,14 @@ public class MapView extends View {
     }
 
     private static int colorFor(int owner) {
-        if (owner == 1) return COLOR_P1;
-        if (owner == 2) return COLOR_P2;
-        return COLOR_NPC;
+        switch (owner) {
+            case 1: return COLOR_P1;
+            case 2: return COLOR_P2;
+            case 3: return COLOR_KUZEY;
+            case 4: return COLOR_DOGU;
+            case 5: return COLOR_BATI;
+            case 6: return COLOR_GUNEY;
+            default: return COLOR_NEUTRAL;
+        }
     }
 }
