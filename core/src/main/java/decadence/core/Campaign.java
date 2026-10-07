@@ -14,10 +14,15 @@ import java.util.Map;
  * Sunucu yok. İki cihaz loglarını birleştirince aynı durumu hesaplar.
  */
 public final class Campaign {
-    private static final Comparator<Command> ORDER = Comparator
-            .comparingLong(Command::day)
-            .thenComparingInt(Command::player)
-            .thenComparingInt(Command::seq);
+    /** Gün, oyuncu, sıra. Anonim sınıf: dx 1.7 (eski Android dexer) lambda/method ref desteklemez. */
+    private static final Comparator<Command> ORDER = new Comparator<Command>() {
+        @Override
+        public int compare(Command a, Command b) {
+            if (a.day() != b.day()) return a.day() < b.day() ? -1 : 1;
+            if (a.player() != b.player()) return Integer.compare(a.player(), b.player());
+            return Integer.compare(a.seq(), b.seq());
+        }
+    };
 
     private final long seed;
     private final long epochMs;

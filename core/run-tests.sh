@@ -3,5 +3,5 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf build && mkdir -p build
-javac -d build $(find src -name '*.java')
+javac --release 8 -d build $(find src -name '*.java')
 java -cp build decadence.core.CoreTest
